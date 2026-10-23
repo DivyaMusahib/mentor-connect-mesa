@@ -45,7 +45,7 @@ graph TD
    - Rescheduling and calendar cancellation.
    - Error handler boundaries with execution tracking.
 4. **React (JavaScript) owns Presentation**:
-   - Intuitive, high-clarity interface tailored to Mesa School of Business.
+   - Intuitive, high-clarity interface for career mentorship workflows.
    - Evaluator demo controls and transparent explainability views.
 
 ---

@@ -62,5 +62,5 @@ jhk.txt
 Thumbs.db
 
 # Private / personal docs — do not commit
-docs/interview-prep.md
-docs/walkthrough-script.md
+walkthrough-script.md
+product-design-note.md
