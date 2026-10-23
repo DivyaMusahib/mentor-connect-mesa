@@ -1,0 +1,226 @@
+{
+  "name": "02 Mentor Connect - Create Meeting",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mentor-connect/create-meeting",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-create",
+      "name": "Meeting Creation Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "mc-create-meeting"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.headers['x-n8n-key'] }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "node-verify-auth",
+      "name": "Verify Header Key",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "calendar": "primary",
+        "start": "={{ $json.body.payload.scheduled_at }}",
+        "end": "={{ new Date(new Date($json.body.payload.scheduled_at).getTime() + ($json.body.payload.duration_minutes || 45)*60000).toISOString() }}",
+        "summary": "={{ 'Mesa Mentorship: ' + $json.body.payload.student_name + ' & ' + $json.body.payload.mentor_name }}",
+        "description": "={{ 'Mesa School of Business Mentorship Session\\n\\nStudent: ' + $json.body.payload.student_name + '\\nMentor: ' + $json.body.payload.mentor_name + '\\n\\nPreparation Brief:\\n' + $json.body.payload.pre_call_brief_summary + '\\n\\nSession duration: 45 minutes.' }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $json.body.payload.student_email }}"
+          ],
+          "conferenceDataUi": {
+            "conferenceDataValues": {
+              "conferenceSolution": "hangoutsMeet"
+            }
+          }
+        }
+      },
+      "id": "node-create-calendar-event",
+      "name": "Create Google Calendar Event & Meet",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.1,
+      "position": [640, 220],
+      "credentials": {
+        "googleCalendarOAuth2": {
+          "id": "google_calendar_oauth2_account",
+          "name": "Google Calendar Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const calItem = $input.first().json;\nconst body = $('Meeting Creation Webhook').first().json.body.payload;\n\n// Extract real meet link from conferenceData or fallback to generated link\nlet meetLink = calItem.hangoutLink || (calItem.conferenceData && calItem.conferenceData.entryPoints ? calItem.conferenceData.entryPoints[0].uri : null);\nif (!meetLink) {\n  meetLink = `https://meet.google.com/mesa-${(body.booking_id || 'meet').substring(0, 4)}-${(body.booking_id || 'link').substring(4, 8)}`;\n}\n\nreturn [{\n  json: {\n    status: 'success',\n    booking_id: body.booking_id,\n    calendar_event_id: calItem.id || `cal_${body.booking_id}`,\n    meet_link: meetLink,\n    execution_id: $execution.id,\n    student_email: body.student_email,\n    mentor_name: body.mentor_name,\n    scheduled_at: body.scheduled_at\n  }\n}];"
+      },
+      "id": "node-extract-details",
+      "name": "Extract Meeting Link & Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-fastapi",
+      "name": "Respond to FastAPI",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1080, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Meeting Creation Webhook').first().json.body.payload.callback_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-FastAPI-Key",
+              "value": "mentor-connect-fastapi-callback-secret-key"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "meeting_created"
+            },
+            {
+              "name": "booking_id",
+              "value": "={{ $json.booking_id }}"
+            },
+            {
+              "name": "status",
+              "value": "success"
+            },
+            {
+              "name": "calendar_event_id",
+              "value": "={{ $json.calendar_event_id }}"
+            },
+            {
+              "name": "meet_link",
+              "value": "={{ $json.meet_link }}"
+            },
+            {
+              "name": "execution_id",
+              "value": "={{ $json.execution_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-notify-callback",
+      "name": "FastAPI Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"error\", \"detail\": \"Unauthorized request.\"}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "node-reject-unauth",
+      "name": "Reject Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 420]
+    }
+  ],
+  "connections": {
+    "Meeting Creation Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Header Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Header Key": {
+      "main": [
+        [
+          {
+            "node": "Create Google Calendar Event & Meet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Calendar Event & Meet": {
+      "main": [
+        [
+          {
+            "node": "Extract Meeting Link & Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Meeting Link & Details": {
+      "main": [
+        [
+          {
+            "node": "Respond to FastAPI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to FastAPI": {
+      "main": [
+        [
+          {
+            "node": "FastAPI Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

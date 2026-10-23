@@ -1,0 +1,97 @@
+{
+  "name": "10 Mentor Connect - Automation Error Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "node-error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const execution = $execution;\nconst workflow = $workflow;\n\nreturn [{\n  json: {\n    execution_id: execution.id,\n    workflow_id: workflow.id,\n    workflow_name: workflow.name,\n    error_message: execution.error ? execution.error.message : 'Unknown workflow failure',\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "node-format-error-log",
+      "name": "Format Error Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/integrations/n8n/meeting-created",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-FastAPI-Key",
+              "value": "mentor-connect-fastapi-callback-secret-key"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "workflow_failure"
+            },
+            {
+              "name": "status",
+              "value": "failure"
+            },
+            {
+              "name": "execution_id",
+              "value": "={{ $json.execution_id }}"
+            },
+            {
+              "name": "error_message",
+              "value": "={{ $json.error_message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-post-error-fastapi",
+      "name": "Notify FastAPI of Workflow Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Error Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Payload": {
+      "main": [
+        [
+          {
+            "node": "Notify FastAPI of Workflow Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

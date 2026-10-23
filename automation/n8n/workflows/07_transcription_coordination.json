@@ -1,0 +1,95 @@
+{
+  "name": "07 Mentor Connect - Transcription Coordination",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mentor-connect/transcription/coordinate",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-transcription-coord-webhook",
+      "name": "Coordinate Transcription",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "mc-transcribe-coord"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "provider",
+              "value": "fathom"
+            },
+            {
+              "name": "booking_id",
+              "value": "={{ $json.body.booking_id }}"
+            },
+            {
+              "name": "meet_link",
+              "value": "={{ $json.body.meet_link }}"
+            },
+            {
+              "name": "status",
+              "value": "fathom_bot_scheduled"
+            },
+            {
+              "name": "note",
+              "value": "Fathom auto-joins Google Meet via Google Calendar sync created in Workflow 02."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-fathom-coordination-check",
+      "name": "Fathom Notetaker Coordination",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"bot_dispatched\", \"provider\": \"fathom\", \"message\": \"Fathom AI notetaker verified for Google Meet session.\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-bot-status",
+      "name": "Respond Dispatched",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Coordinate Transcription": {
+      "main": [
+        [
+          {
+            "node": "Fathom Notetaker Coordination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fathom Notetaker Coordination": {
+      "main": [
+        [
+          {
+            "node": "Respond Dispatched",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

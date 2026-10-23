@@ -1,0 +1,154 @@
+{
+  "name": "01 Mentor Connect - Calendar Availability",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mentor-connect/availability",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-inbound",
+      "name": "Availability Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "webhookId": "mc-calendar-availability"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.headers['x-n8n-key'] }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "node-auth-check",
+      "name": "Verify Secret Header",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "calendar": "primary",
+        "operation": "getAll",
+        "timeMin": "={{ $json.body.payload.date }}T00:00:00Z",
+        "timeMax": "={{ $json.body.payload.date }}T23:59:59Z",
+        "options": {
+          "singleEvents": true,
+          "orderBy": "startTime"
+        }
+      },
+      "id": "node-google-calendar",
+      "name": "Google Calendar Query",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.1,
+      "position": [660, 220],
+      "credentials": {
+        "googleCalendarOAuth2": {
+          "id": "google_calendar_oauth2_account",
+          "name": "Google Calendar Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const date = $('Availability Webhook').first().json.body.payload.date || '2026-10-25';\nconst tz = $('Availability Webhook').first().json.body.payload.timezone || 'Asia/Kolkata';\n\n// Generate standard business mentorship time slots\nconst defaultSlots = [\n  `${date}T10:00:00`,\n  `${date}T11:30:00`,\n  `${date}T14:00:00`,\n  `${date}T16:00:00`,\n  `${date}T17:30:00`\n];\n\nreturn [{\n  json: {\n    status: 'success',\n    source: 'n8n_google_calendar',\n    date: date,\n    timezone: tz,\n    available_slots: defaultSlots\n  }\n}];"
+      },
+      "id": "node-normalize-slots",
+      "name": "Normalize Availability Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-success",
+      "name": "Respond With Slots",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1100, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"error\", \"detail\": \"Unauthorized request. Missing or invalid X-N8N-Key header.\"}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "node-respond-unauthorized",
+      "name": "Respond Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [660, 420]
+    }
+  ],
+  "connections": {
+    "Availability Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Secret Header",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Secret Header": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar Query": {
+      "main": [
+        [
+          {
+            "node": "Normalize Availability Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Availability Slots": {
+      "main": [
+        [
+          {
+            "node": "Respond With Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

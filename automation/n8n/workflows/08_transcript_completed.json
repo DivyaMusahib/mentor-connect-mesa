@@ -1,0 +1,111 @@
+{
+  "name": "08 Mentor Connect - Transcript Completed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mentor-connect/transcript-ready",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-transcript-ready-webhook",
+      "name": "Fathom Transcript Ready Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "mc-transcript-ready"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/integrations/transcription/webhook",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-FastAPI-Key",
+              "value": "mentor-connect-fastapi-callback-secret-key"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "provider",
+              "value": "={{ $json.body.provider || 'fathom' }}"
+            },
+            {
+              "name": "provider_task_id",
+              "value": "={{ $json.body.call_id || $json.body.recording_id || $json.body.bot_id || 'fathom_rec_001' }}"
+            },
+            {
+              "name": "booking_id",
+              "value": "={{ $json.body.booking_id || $json.body.external_id }}"
+            },
+            {
+              "name": "status",
+              "value": "completed"
+            },
+            {
+              "name": "transcript_text",
+              "value": "={{ $json.body.transcript_text || $json.body.transcript || $json.body.summary }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-forward-fastapi",
+      "name": "Forward Fathom Transcript to FastAPI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"ingested\", \"provider\": \"fathom\", \"message\": \"Fathom transcript ingested into Mesa AI engine.\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-ingested",
+      "name": "Respond Ingested",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Fathom Transcript Ready Webhook": {
+      "main": [
+        [
+          {
+            "node": "Forward Fathom Transcript to FastAPI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward Fathom Transcript to FastAPI": {
+      "main": [
+        [
+          {
+            "node": "Respond Ingested",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

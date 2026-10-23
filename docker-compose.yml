@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: mentor_connect_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: mentor_connect
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mentor_connect"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mentor_connect_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+psycopg2://postgres:postgrespassword@db:5432/mentor_connect
+      SECRET_KEY: mentor-connect-production-secret-key-change-me
+      BACKEND_URL: http://localhost:8000
+      FRONTEND_URL: http://localhost:5173
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: gemini-2.5-flash
+      N8N_BASE_URL: ${N8N_BASE_URL:-https://mentor-connect-demo.app.n8n.cloud}
+      N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:-mentor-connect-n8n-shared-secret-key}
+      FASTAPI_WEBHOOK_SECRET: ${FASTAPI_WEBHOOK_SECRET:-mentor-connect-fastapi-callback-secret-key}
+      ENABLE_EVALUATOR_DEMO: "True"
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mentor_connect_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  postgres_data:

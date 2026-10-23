@@ -1,0 +1,108 @@
+{
+  "name": "03 Mentor Connect - Booking Confirmation Emails",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mentor-connect/confirmation-emails",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-email",
+      "name": "Confirmation Email Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "mc-confirmation-emails"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.student_email }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "node-validate-recipient",
+      "name": "Check Recipient Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.body.student_email }}",
+        "subject": "={{ 'Confirmed: Mesa Mentorship with ' + $json.body.mentor_name + ' on ' + $json.body.scheduled_at }}",
+        "message": "={{ 'Hello ' + $json.body.student_name + ',\\n\\nYour mentorship session with ' + $json.body.mentor_name + ' is confirmed!\\n\\nDate & Time: ' + $json.body.scheduled_at + ' (' + $json.body.timezone + ')\\nMeeting Link: ' + $json.body.meet_link + '\\n\\nYour personalized Pre-Call Brief and questions are ready on the Mesa portal.\\n\\nBest regards,\\nMesa School of Business Mentorship Team' }}",
+        "options": {}
+      },
+      "id": "node-send-student-gmail",
+      "name": "Send Student Confirmation (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [660, 220],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail_oauth2_account",
+          "name": "Gmail Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"dispatched\", \"message\": \"Confirmation email sent to student successfully.\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-dispatched",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [880, 220]
+    }
+  ],
+  "connections": {
+    "Confirmation Email Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Recipient Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Recipient Valid": {
+      "main": [
+        [
+          {
+            "node": "Send Student Confirmation (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Student Confirmation (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

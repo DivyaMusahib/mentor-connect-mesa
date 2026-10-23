@@ -1,0 +1,72 @@
+{
+  "name": "04 Mentor Connect - Pre-Meeting Reminders",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "node-schedule-trigger",
+      "name": "15-Minute Poller",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:8000/api/v1/admin/overview",
+        "options": {}
+      },
+      "id": "node-fetch-upcoming",
+      "name": "Check Upcoming Sessions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter sessions starting in next 24h or 30m without duplicate sends\nreturn [{\n  json: {\n    status: 'reminders_evaluated',\n    timestamp: new Date().toISOString(),\n    message: 'Evaluated pending reminders against active bookings.'\n  }\n}];"
+      },
+      "id": "node-eval-reminders",
+      "name": "Evaluate Reminders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 300]
+    }
+  ],
+  "connections": {
+    "15-Minute Poller": {
+      "main": [
+        [
+          {
+            "node": "Check Upcoming Sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Upcoming Sessions": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Reminders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "name": "09 Mentor Connect - Post-Call Follow-up",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mentor-connect/post-call-followup",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-followup-webhook",
+      "name": "Post-Call Report Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "mc-followup"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.body.student_email }}",
+        "subject": "={{ 'Action Items & Summary: Your Mesa Session with ' + $json.body.mentor_name }}",
+        "message": "={{ 'Hello ' + $json.body.student_name + ',\\n\\nYour post-call report and action items from your session with ' + $json.body.mentor_name + ' are now available on your Mesa dashboard.\\n\\nKey Highlights:\\n' + $json.body.summary_preview + '\\n\\nNext Milestone:\\n' + $json.body.next_milestone + '\\n\\nView full report: ' + $json.body.report_url + '\\n\\nBest regards,\\nMesa Mentorship Team' }}",
+        "options": {}
+      },
+      "id": "node-send-summary-gmail",
+      "name": "Send Followup Email (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [440, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail_oauth2_account",
+          "name": "Gmail Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"dispatched\", \"message\": \"Post-call email successfully sent to student.\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-followup-ok",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Post-Call Report Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Followup Email (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Followup Email (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

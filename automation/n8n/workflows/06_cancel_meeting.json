@@ -1,0 +1,79 @@
+{
+  "name": "06 Mentor Connect - Cancel Meeting",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mentor-connect/cancel",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-cancel",
+      "name": "Cancel Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "mc-cancel"
+    },
+    {
+      "parameters": {
+        "calendar": "primary",
+        "operation": "delete",
+        "eventId": "={{ $json.body.payload.calendar_event_id }}"
+      },
+      "id": "node-delete-calendar",
+      "name": "Delete Google Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.1,
+      "position": [440, 300],
+      "credentials": {
+        "googleCalendarOAuth2": {
+          "id": "google_calendar_oauth2_account",
+          "name": "Google Calendar Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"success\", \"message\": \"Google Calendar event cancelled and removed.\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-cancelled",
+      "name": "Respond Cancelled",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Cancel Webhook": {
+      "main": [
+        [
+          {
+            "node": "Delete Google Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Google Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Respond Cancelled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
