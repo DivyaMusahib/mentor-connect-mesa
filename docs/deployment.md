@@ -10,7 +10,7 @@ Mentor Connect is built on a high-availability, zero-maintenance cloud architect
 | **Backend** | [Render](https://render.com) | FastAPI (Python 3.12) Web Service | Free Tier / Hobby |
 | **Database** | [Neon](https://neon.tech) / [Supabase](https://supabase.com) | Serverless Managed PostgreSQL 16 | Free Tier |
 | **Automation** | [n8n Cloud](https://n8n.io) | Google Calendar, Google Meet & Gmail Workflows | Cloud Free Trial |
-| **AI Engine** | [Google AI Studio](https://aistudio.google.com) | Gemini 3.5 Flash Lite / 2.5 Flash Structured Outputs | Free Tier |
+| **AI Engine** | [Google AI Studio](https://aistudio.google.com) | Gemini 2.5 Flash Structured Outputs | Free Tier |
 
 ---
 
@@ -81,7 +81,7 @@ Student Google OAuth 2.0 authentication is managed through Google Cloud Console.
    COOKIE_SECURE=True
    COOKIE_SAMESITE=none
    GEMINI_API_KEY=<your-google-ai-studio-gemini-key>
-   GEMINI_MODEL=gemini-3.5-flash-lite
+   GEMINI_MODEL=gemini-2.5-flash
    GOOGLE_CLIENT_ID=<your-google-client-id>.apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET=<your-google-client-secret>
    GOOGLE_REDIRECT_URI=https://<your-backend-name>.onrender.com/api/v1/auth/google/callback

@@ -43,6 +43,7 @@ frontend/.vite/
 backend/*.db
 backend/*.sqlite
 backend/*.sqlite3
+backend/data/*.db
 
 # Environment & Secrets
 .env
@@ -59,3 +60,7 @@ jhk.txt
 *.swo
 .DS_Store
 Thumbs.db
+
+# Private / personal docs — do not commit
+docs/interview-prep.md
+docs/walkthrough-script.md

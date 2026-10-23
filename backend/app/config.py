@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     # Google Gemini AI (google-genai SDK)
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # n8n Cloud Automation Integration
     N8N_BASE_URL: str = "https://mentor-connect-demo.app.n8n.cloud"

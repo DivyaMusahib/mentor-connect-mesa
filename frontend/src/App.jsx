@@ -108,7 +108,7 @@ function AppContent() {
             © 2026 Mesa School of Business — Mentor Connect
           </p>
           <p className="text-[11px] text-zinc-400">
-            FastAPI · Gemini 3.5 · n8n · Fathom · Google OAuth
+            FastAPI · Gemini 2.5 Flash · n8n Cloud · Google OAuth
           </p>
         </div>
       </footer>
