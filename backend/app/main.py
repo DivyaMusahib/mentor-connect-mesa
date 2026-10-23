@@ -66,7 +66,7 @@ app.include_router(admin_router, prefix=api_v1_prefix)
 app.include_router(demo_router, prefix=api_v1_prefix)
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     return {
         "name": settings.PROJECT_NAME,
@@ -76,6 +76,6 @@ def root():
     }
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
     return {"status": "healthy"}

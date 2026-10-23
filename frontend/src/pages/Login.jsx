@@ -23,7 +23,8 @@ export default function Login() {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = '/api/v1/auth/google/login';
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+    window.location.href = `${apiBase}/api/v1/auth/google/login`;
   };
 
   return (

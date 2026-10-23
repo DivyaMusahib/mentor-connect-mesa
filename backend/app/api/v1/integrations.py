@@ -111,7 +111,7 @@ async def transcription_provider_webhook(
         return {"status": "received", "detail": payload.error_message}
 
 
-@router.get("/health", response_model=IntegrationHealthStatus)
+@router.api_route("/health", methods=["GET", "HEAD"], response_model=IntegrationHealthStatus)
 def get_integration_health(db: Session = Depends(get_db)):
     """Report real-time connectivity and configuration status of all external services."""
     db_connected = False
