@@ -17,10 +17,20 @@
     },
     {
       "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst data = (raw.body && raw.body.payload) ? raw.body.payload : (raw.body || raw);\n\nconst studentName = data.student_name || 'Student';\nconst studentEmail = data.student_email || (raw.body && raw.body.student_email);\nconst mentorName = data.mentor_name || 'Mentor';\nconst scheduledAt = data.scheduled_at || '';\nconst timezone = data.timezone || 'Asia/Kolkata';\nconst meetLink = data.meet_link || 'https://meet.google.com';\nconst briefSummary = data.pre_call_brief_summary || '';\nconst blocker = data.current_blocker || '';\nconst desiredOutcome = data.desired_outcome || '';\nconst portalUrl = data.portal_url || 'https://mentor-connect-mesa.vercel.app/preparation';\n\n// Format questions\nlet questionsText = '';\nif (Array.isArray(data.key_questions) && data.key_questions.length > 0) {\n  questionsText = data.key_questions.map((q, idx) => `  ${idx + 1}. ${q}`).join('\\n');\n} else if (typeof data.key_questions === 'string') {\n  questionsText = `  • ${data.key_questions}`;\n}\n\n// Format agenda\nlet agendaText = '';\nif (Array.isArray(data.suggested_agenda) && data.suggested_agenda.length > 0) {\n  agendaText = data.suggested_agenda.map(a => `  • ${a}`).join('\\n');\n}\n\n// Format checklist\nlet checklistText = '';\nif (Array.isArray(data.checklist) && data.checklist.length > 0) {\n  checklistText = data.checklist.map(c => `  [ ] ${c}`).join('\\n');\n}\n\n// Format date nicely\nlet dateDisplay = scheduledAt;\ntry {\n  const d = new Date(scheduledAt);\n  dateDisplay = d.toLocaleString('en-US', {\n    weekday: 'short',\n    month: 'short',\n    day: 'numeric',\n    year: 'numeric',\n    hour: '2-digit',\n    minute: '2-digit',\n    timeZoneName: 'short'\n  });\n} catch(e) {}\n\nconst subject = `Confirmed: Mesa Mentorship with ${mentorName} on ${dateDisplay}`;\n\nconst message = `Hello ${studentName},\\n\\nYour mentorship session with ${mentorName} is confirmed!\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nSESSION DETAILS\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n• Date & Time: ${dateDisplay} (${timezone})\\n• Duration: 45 Minutes\\n• Google Meet: ${meetLink}\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nPRE-CALL PREPARATION BRIEF\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n${briefSummary ? `SUMMARY:\\n${briefSummary}\\n\\n` : ''}${blocker ? `CURRENT BLOCKER:\\n${blocker}\\n\\n` : ''}${desiredOutcome ? `DESIRED OUTCOME:\\n${desiredOutcome}\\n\\n` : ''}${questionsText ? `3 KEY QUESTIONS TO COVER:\\n${questionsText}\\n\\n` : ''}${agendaText ? `SUGGESTED 45-MINUTE AGENDA:\\n${agendaText}\\n\\n` : ''}${checklistText ? `PREPARATION CHECKLIST:\\n${checklistText}\\n\\n` : ''}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nACCESS YOUR INTERACTIVE BRIEF\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nYou can review, take notes, and track your action items directly on the Mesa portal:\\n${portalUrl}\\n\\nBest regards,\\nMesa School of Business Mentorship Team`;\n\nreturn [{\n  json: {\n    student_email: studentEmail,\n    student_name: studentName,\n    mentor_name: mentorName,\n    meet_link: meetLink,\n    email_subject: subject,\n    email_body: message,\n    booking_id: data.booking_id,\n    execution_id: $execution.id\n  }\n}];"
+      },
+      "id": "node-format-email",
+      "name": "Format Brief & Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
         "conditions": {
           "string": [
             {
-              "value1": "={{ $json.body.student_email }}",
+              "value1": "={{ $json.student_email }}",
               "operation": "isNotEmpty"
             }
           ]
@@ -30,20 +40,20 @@
       "name": "Check Recipient Valid",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [420, 300]
+      "position": [640, 300]
     },
     {
       "parameters": {
-        "sendTo": "={{ $json.body.student_email }}",
-        "subject": "={{ 'Confirmed: Mesa Mentorship with ' + $json.body.mentor_name + ' on ' + $json.body.scheduled_at }}",
-        "message": "={{ 'Hello ' + $json.body.student_name + ',\\n\\nYour mentorship session with ' + $json.body.mentor_name + ' is confirmed!\\n\\nDate & Time: ' + $json.body.scheduled_at + ' (' + $json.body.timezone + ')\\nMeeting Link: ' + $json.body.meet_link + '\\n\\nYour personalized Pre-Call Brief and questions are ready on the Mesa portal.\\n\\nBest regards,\\nMesa School of Business Mentorship Team' }}",
+        "sendTo": "={{ $json.student_email }}",
+        "subject": "={{ $json.email_subject }}",
+        "message": "={{ $json.email_body }}",
         "options": {}
       },
       "id": "node-send-student-gmail",
       "name": "Send Student Confirmation (Gmail)",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [660, 220],
+      "position": [860, 220],
       "credentials": {
         "gmailOAuth2": {
           "id": "gmail_oauth2_account",
@@ -54,7 +64,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "{\"status\": \"dispatched\", \"message\": \"Confirmation email sent to student successfully.\"}",
+        "responseBody": "={{ JSON.stringify({ status: 'dispatched', booking_id: $json.booking_id, recipient: $json.student_email, message: 'Confirmation and preparation brief email sent successfully.' }) }}",
         "options": {
           "responseCode": 200
         }
@@ -63,11 +73,36 @@
       "name": "Respond Success",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [880, 220]
+      "position": [1080, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"error\", \"detail\": \"Missing or invalid student_email in payload.\"}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "node-reject-invalid-recipient",
+      "name": "Reject Invalid Recipient",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [860, 420]
     }
   ],
   "connections": {
     "Confirmation Email Webhook": {
+      "main": [
+        [
+          {
+            "node": "Format Brief & Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Brief & Email": {
       "main": [
         [
           {
@@ -83,6 +118,13 @@
         [
           {
             "node": "Send Student Confirmation (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Recipient",
             "type": "main",
             "index": 0
           }

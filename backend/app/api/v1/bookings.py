@@ -259,6 +259,16 @@ async def create_booking(
     db.commit()
     db.refresh(booking)
 
+    # Dispatch Pre-Call Brief & Booking Confirmation Email via n8n Workflow 03
+    await n8n_client.trigger_booking_confirmation_email(
+        db=db,
+        booking=booking,
+        student_email=user.email,
+        student_name=user.full_name,
+        mentor_name=mentor.name,
+        brief=brief,
+    )
+
     return _format_booking_detail(booking)
 
 
